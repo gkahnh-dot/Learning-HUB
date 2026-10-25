@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Learning HUB – Study Platform</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
+
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --panel: rgba(255,255,255,0.85);
+      --stroke: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --primary: #4f46e5;
+      --primary-2: #7c3aed;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: radial-gradient(circle at top, #eef2ff 0%, #f8fafc 28%, #f1f5f9 100%);
+      color: var(--text);
+    }
+
+    a { text-decoration: none; }
+    button, input, select, textarea {
+      font: inherit;
+    }
+
+    .glass {
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(148,163,184,0.18);
+    }
+
+    .card-hover {
+      transition: all 0.25s ease;
+      border: 1px solid var(--stroke);
+    }
+    .card-hover:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 22px 36px rgba(79, 70, 229, 0.12);
+    }
+
+    .active-tab {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: white !important;
+      box-shadow: 0 16px 24px rgba(79, 70, 229, 0.22);
+    }
+
+    .hidden-panel {
+      display: none !important;
+    }
+
+    .file-badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .doc-thumb {
+      min-height: 170px;
+      border-radius: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #eef2ff, #f5f3ff);
+      border: 1px dashed rgba(79, 70, 229, 0.2);
+    }
+
+    .line-clamp-3 {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .flip-card {
+      perspective: 1000px;
+      cursor: pointer;
+    }
+
+    .flip-card-inner {
+      position: relative;
+      width: 100%;
+      height: 220px;
+      transition: transform 0.7s ease;
+      transform-style: preserve-3d;
+    }
+
+    .flip-card.flipped .flip-card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .flip-card-front,
+    .flip-card-back {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      border-radius: 22px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .flip-card-front {
+      background: linear-gradient(135deg, #eef2ff, #ffffff);
+      border: 1px solid rgba(79, 70, 229, 0.15);
+    }
+
+    .flip-card-back {
+      transform: rotateY(180deg);
+      background: linear-gradient(135deg, #ede9fe, #ecfeff);
+      border: 1px solid rgba(124, 58, 237, 0.2);
+    }
+
+    .quiz-option {
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--stroke);
+      background: #f8fafc;
+      margin-top: 8px;
+      font-size: 14px;
+    }
+
+    .quiz-option.correct {
+      background: rgba(16,185,129,0.12);
+      border-color: rgba(16,185,129,0.4);
+      color: #065f46;
+    }
+
+    .quiz-option.wrong {
+      background: rgba(239,68,68,0.08);
+      border-color: rgba(239,68,68,0.25);
+      color: #7f1d1d;
+    }
+  </style>
+</head>
+<body>
+  <div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <aside class="hidden md:flex w-72 flex-col border-r border-slate-200 bg-white/80">
+      <div class="p-6 border-b border-slate-200">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-500 text-white flex items-center justify-center text-xl shadow-lg">
+            <i class="fa-solid fa-graduation-cap"></i>
+          </div>
+          <div>
+            <p class="text-xl font-black text-slate-800">Learning HUB</p>
+            <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-indigo-600">Study Platform</p>
+          </div>
+        </div>
+      </div>
+
+      <nav class="p-4 space-y-2">
+        <button class="nav-btn active-tab w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold" data-tab="tailieu">
+          <i class="fa-solid fa-book-open"></i>
+          <span>Tài liệu môn học</span>
+        </button>
+
+        <button class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-slate-100" data-tab="khoahoc">
+          <i class="fa-solid fa-layer-group"></i>
+          <span>Khóa học</span>
+        </button>
+
+        <button class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-slate-100" data-tab="khochung">
+          <i class="fa-solid fa-folder-open"></i>
+          <span>Kho chung</span>
+        </button>
+
+        <button class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-slate-100" data-tab="flashcard">
+          <i class="fa-solid fa-clone"></i>
+          <span>Flashcard</span>
+        </button>
+
+        <button class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-slate-100" data-tab="phongthi">
+          <i class="fa-solid fa-clipboard-question"></i>
+          <span>Phòng thi thử</span>
+        </button>
+
+        <button class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-slate-100" data-tab="thptqg">
+          <i class="fa-solid fa-award"></i>
+          <span>Đề thi THPTQG</span>
+        </button>
+      </nav>
+
+      <div class="mt-auto p-4 border-t border-slate-200">
+        <div class="rounded-3xl bg-gradient-to-br from-indigo-50 to-violet-50 p-4">
+          <div class="flex justify-between text-xs font-semibold text-slate-600">
+            <span>Trạng thái</span>
+            <span class="text-emerald-600">Online</span>
+          </div>
+          <p class="mt-3 text-sm text-slate-700 font-medium">Dữ liệu được đồng bộ với cả nhóm</p>
+          <p class="mt-2 text-xs text-slate-500">Đã kết nối Supabase</p>
+        </div>
+      </div>
+    </aside>
+
+    <main class="flex-1">
+      <header class="glass sticky top-0 z-30">
+        <div class="px-6 py-4 flex items-center justify-between">
+          <div>
+            <p class="text-[11px] uppercase tracking-[0.25em] text-indigo-500 font-black">Learning HUB</p>
+            <h2 id="headerTitle" class="text-xl font-black text-slate-800">Tài liệu môn học</h2>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <span class="hidden sm:inline-flex items-center gap-2 rounded-full bg-indigo-50 text-indigo-700 px-3 py-2 text-xs font-bold">
+              <i class="fa-solid fa-users"></i>
+              Nhóm 4 người
+            </span>
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-600 to-violet-500 text-white flex items-center justify-center font-black shadow-md">
+              GK
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- TAB: TÀI LIỆU MÔN HỌC -->
+      <section id="tab-tailieu" class="tab-panel p-6 lg:p-8">
+        <div class="max-w-7xl mx-auto space-y-7">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <h3 class="text-3xl font-black text-slate-800">Tài liệu môn học</h3>
+              <p class="text-sm text-slate-500 mt-1">Quản lý tài liệu, PDF, đề cương, ghi chú và file học tập.</p>
+            </div>
+
+            <button id="toggleUploadForm" class="bg-gradient-to-r from-indigo-600 to-violet-500 text-white px-5 py-3 rounded-2xl text-sm font-bold shadow-lg hover:shadow-xl transition">
+              <i class="fa-solid fa-upload mr-2"></i>
+              Tải tài liệu lên
+            </button>
+          </div>
+
+          <div id="uploadForm" class="hidden glass rounded-3xl p-5 shadow-sm">
+            <div class="grid lg:grid-cols-2 gap-5">
+              <div>
+                <label class="text-[11px] font-black uppercase tracking-wide text-slate-500">Tiêu đề</label>
+                <input id="docTitle" class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="VD: Đề cương Hóa học 12">
+              </div>
+
+              <div>
+                <label class="text-[11px] font-black uppercase tracking-wide text-slate-500">Môn học</label>
+                <select id="docSubject" class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                  <option value="Toán">Toán</option>
+                  <option value="Lý">Lý</option>
+                  <option value="Hóa">Hóa</option>
+                  <option value="Sinh">Sinh</option>
+                  <option value="Văn">Văn</option>
+                  <option value="Anh">Anh</option>
+                  <option value="Sử">Sử</option>
+                  <option value="Địa">Địa</option>
+                  <option value="Khác">Khác</option>
+                </select>
+              </div>
+
+              <div class="lg:col-span-2">
+                <label class="text-[11px] font-black uppercase tracking-wide text-slate-500">Mô tả</label>
+                <textarea id="docContent" rows="3" class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Viết mô tả ngắn về tài liệu, mục tiêu học tập, tin nhắn cho nhóm ..."></textarea>
+              </div>
+
+              <div class="lg:col-span-2">
+                <label class="text-[11px] font-black uppercase tracking-wide text-slate-500">File tài liệu</label>
+                <input id="docFile" type="file" class="mt-2 block w-full text-sm text-slate-600 file:mr-4 file:py-3 file:px-4 file:rounded-2xl file:border-0 file:text-sm file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+              </div>
+            </div>
+
+            <div class="mt-5 flex justify-end">
+              <button id="saveDocBtn" class="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-5 py-3 rounded-2xl font-bold shadow-md hover:shadow-lg transition">
+                <i class="fa-solid fa-floppy-disk mr-2"></i>
+                Lưu tài liệu
+              </button>
+            </div>
+          </div>
+
+          <div class="glass rounded-3xl p-5 shadow-sm">
+            <div class="flex flex-col lg:flex-row gap-4">
+              <div class="flex-1">
+                <label class="text-[11px] font-black uppercase tracking-wide text-slate-500">Tìm kiếm</label>
+                <div class="mt-2 relative">
+                  <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                  <input id="searchDocs" class="w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Nhập tên tài liệu, môn học hoặc mô tả">
+                </div>
+              </div>
+
+              <div class="lg:w-96">
+                <label class="text-[11px] font-black uppercase tracking-wide text-slate-500">Lọc theo môn</label>
+                <div class="mt-2 flex flex-wrap gap-2">
+                  <button class="subject-btn active-subject px-3 py-2 rounded-full text-xs font-bold bg-indigo-600 text-white" data-subject="Tất cả">Tất cả</button>
+                  <button class="subject-btn px-3 py-2 rounded-full text-xs font-bold bg-slate-100 text-slate-600" data-subject="Toán">Toán</button>
+                  <button class="subject-btn px-3 py-2 rounded-full text-xs font-bold bg-slate-100 text-slate-600" data-subject="Lý">Lý</button>
+                  <button class="subject-btn px-3 py-2 rounded-full text-xs font-bold bg-slate-100 text-slate-600" data-subject="Hóa">Hóa</button>
+                  <button class="subject-btn px-3 py-2 rounded-full text-xs font-bold bg-slate-100 text-slate-600" data-subject="Anh">Anh</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="documentsGrid" class="grid xl:grid-cols-3 gap-5"></div>
+        </div>
+      </section>
+
+      <!-- TAB: KHÓA HỌC -->
+      <section id="tab-khoahoc" class="tab-panel hidden-panel p-6 lg:p-8">
+        <div class="max-w-7xl mx-auto">
+          <div class="mb-6">
+            <h3 class="text-3xl font-black text-slate-800">Tài liệu Khóa học</h3>
+            <p class="text-sm text-slate-500 mt-1">Bộ sưu tập tài liệu theo khóa, lớp, bài và chuyên đề.</p>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-5">
+            <div class="card-hover bg-white rounded-3xl p-5">
+              <div class="flex items-center justify-between">
+                <span class="file-badge bg-indigo-50 text-indigo-700">Khóa 2025</span>
+                <span class="text-xs text-slate-400">8 file</span>
+              </div>
+              <h4 class="mt-4 text-xl font-bold text-slate-800">Toán 12 – Chương 1</h4>
+              <p class="mt-2 text-sm text-slate-500">Hàm số, đạo hàm, cực trị, tiệm cận và bài tập nâng cao.</p>
+              <button class="mt-4 text-sm font-semibold text-indigo-600">Xem chi tiết</button>
+            </div>
+
+            <div class="card-hover bg-white rounded-3xl p-5">
+              <div class="flex items-center justify-between">
+                <span class="file-badge bg-emerald-50 text-emerald-700">Khóa 2025</span>
+                <span class="text-xs text-slate-400">6 file</span>
+              </div>
+              <h4 class="mt-4 text-xl font-bold text-slate-800">Văn 12 – Nghị luận</h4>
+              <p class="mt-2 text-sm text-slate-500">Mẫu bài, bố cục và cách triển khai ý tưởng hiệu quả.</p>
+              <button class="mt-4 text-sm font-semibold text-indigo-600">Xem chi tiết</button>
+            </div>
+
+            <div class="card-hover bg-white rounded-3xl p-5">
+              <div class="flex items-center justify-between">
+                <span class="file-badge bg-amber-50 text-amber-700">Khóa 2025</span>
+                <span class="text-xs text-slate-400">10 file</span>
+              </div>
+              <h4 class="mt-4 text-xl font-bold text-slate-800">Anh 12 – Unit 1</h4>
+              <p class="mt-2 text-sm text-slate-500">Từ vựng, ngữ pháp, đọc hiểu và bài tập giao tiếp.</p>
+              <button class="mt-4 text-sm font-semibold text-indigo-600">Xem chi tiết</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: KHO CHUNG -->
+      <section id="tab-khochung" class="tab-panel hidden-panel p-6 lg:p-8">
+        <div class="max-w-7xl mx-auto">
+          <h3 class="text-3xl font-black text-slate-800">Kho chung & Tài liệu</h3>
+          <p class="text-sm text-slate-500 mt-1">Nơi lưu trữ tài liệu dùng chung, thư viện nhóm và file hỗ trợ học tập.</p>
+
+          <div class="mt-6 grid md:grid-cols-2 gap-5">
+            <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
+              <h4 class="font-bold text-slate-800">Tài liệu nhóm</h4>
+              <ul class="mt-4 space-y-3 text-sm text-slate-600">
+                <li><i class="fa-solid fa-file-lines mr-2 text-indigo-600"></i> Công thức Toán tổng hợp</li>
+                <li><i class="fa-solid fa-file-lines mr-2 text-indigo-600"></i> Bài tập Hóa học theo dạng</li>
+                <li><i class="fa-solid fa-file-lines mr-2 text-indigo-600"></i> Đề luyện thi Văn</li>
+                <li><i class="fa-solid fa-file-lines mr-2 text-indigo-600"></i> Ghi chú nhanh từng môn</li>
+              </ul>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
+              <h4 class="font-bold text-slate-800">Thư viện chung</h4>
+              <ul class="mt-4 space-y-3 text-sm text-slate-600">
+                <li><i class="fa-solid fa-folder mr-2 text-violet-600"></i> Kho PDF cá nhân</li>
+                <li><i class="fa-solid fa-folder mr-2 text-violet-600"></i> File chia sẻ từ bạn bè</li>
+                <li><i class="fa-solid fa-folder mr-2 text-violet-600"></i> Sổ tay môn học</li>
+                <li><i class="fa-solid fa-folder mr-2 text-violet-600"></i> Tài liệu bổ trợ thêm</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: FLASHCARD -->
+      <section id="tab-flashcard" class="tab-panel hidden-panel p-6 lg:p-8">
+        <div class="max-w-7xl mx-auto">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <h3 class="text-3xl font-black text-slate-800">Flashcard Thông minh</h3>
+              <p class="text-sm text-slate-500 mt-1">Học nhanh từ vựng, khái niệm, công thức và câu hỏi.</p>
+            </div>
+
+            <button id="addFlashcardBtn" class="bg-gradient-to-r from-indigo-600 to-violet-500 text-white px-5 py-3 rounded-2xl text-sm font-bold shadow-lg">
+              <i class="fa-solid fa-plus mr-2"></i>
+              Thêm thẻ mới
+            </button>
+          </div>
+
+          <div id="flashcardsGrid" class="mt-6 grid md:grid-cols-3 gap-5"></div>
+        </div>
+      </section>
+
+      <!-- TAB: PHÒNG THI THỬ -->
+      <section id="tab-phongthi" class="tab-panel hidden-panel p-6 lg:p-8">
+        <div class="max-w-7xl mx-auto">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <h3 class="text-3xl font-black text-slate-800">Phòng thi thử</h3>
+              <p class="text-sm text-slate-500 mt-1">Luyện đề theo môn, đánh giá nhanh và ôn tập hiệu quả.</p>
+            </div>
+
+            <button id="addQuizBtn" class="bg-gradient-to-r from-indigo-600 to-violet-500 text-white px-5 py-3 rounded-2xl text-sm font-bold shadow-lg">
+              <i class="fa-solid fa-plus mr-2"></i>
+              Tạo bộ đề mới
+            </button>
+          </div>
+
+          <div id="quizSetsGrid" class="mt-6 grid md:grid-cols-2 gap-5"></div>
+        </div>
+      </section>
+
+      <!-- TAB: THPTQG -->
+      <section id="tab-thptqg" class="tab-panel hidden-panel p-6 lg:p-8">
+        <div class="max-w-7xl mx-auto">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <h3 class="text-3xl font-black text-slate-800">Đề thi THPTQG</h3>
+              <p class="text-sm text-slate-500 mt-1">Kho đề thi, tài liệu luyện thi chính thức và tham khảo.</p>
+            </div>
+
+            <button id="addTHPTQGBtn" class="bg-gradient-to-r from-indigo-600 to-violet-500 text-white px-5 py-3 rounded-2xl text-sm font-bold shadow-lg">
+              <i class="fa-solid fa-upload mr-2"></i>
+              Đăng đề mới
+            </button>
+          </div>
+
+          <div id="thptqgGrid" class="mt-6 space-y-4"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- PDF Viewer Modal -->
+  <div id="pdfModal" class="fixed inset-0 bg-slate-900/70 hidden z-50 flex items-center justify-center px-4">
+    <div class="bg-white w-full max-w-5xl rounded-3xl overflow-hidden shadow-2xl">
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+        <h4 id="pdfTitle" class="font-bold text-slate-800">Xem tài liệu</h4>
+        <button id="closePdfModal" class="text-slate-500 hover:text-slate-800 text-xl"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-4 bg-slate-100 h-[78vh] overflow-auto flex justify-center">
+        <canvas id="pdfCanvas" class="bg-white shadow-xl"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: add flashcard -->
+  <div id="flashcardModal" class="fixed inset-0 hidden bg-slate-900/70 z-50 flex items-center justify-center px-4">
+    <div class="bg-white w-full max-w-xl rounded-3xl p-6 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h3 class="text-xl font-black text-slate-800">Thêm thẻ flashcard</h3>
+        <button class="closeModalBtn text-slate-500 text-xl" data-target="flashcardModal"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="mt-5 space-y-4">
+        <div>
+          <label class="text-[11px] font-black uppercase tracking-wide text-slate-500">Tên bộ thẻ</label>
+          <input id="flashcardTitle" class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="VD: Vocabulary Unit 1">
+        </div>
+
+        <div>
+          <label class="text-[11px] font-black uppercase tracking-wide text-slate-500">Mặt trước</label>
+          <input id="flashcardFront" class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="VD: Gene">
+        </div>
+
+        <div>
+          <label class="text-[11px] font-black uppercase tracking-wide text-slate-500">Mặt sau</label>
+          <input id="flashcardBack" class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="VD: Gen, đơn vị di truyền của sinh vật">
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end">
+        <button id="saveFlashcardBtn" class="bg-gradient-to-r from-indigo-600 to-violet-500 text-white px-5 py-3 rounded-2xl font-bold">
+          <i class="fa-solid fa-floppy-disk mr-2"></i>
+          Lưu thẻ
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: add quiz -->
+  <div id="quizModal" class="fixed inset-0 hidden bg-slate-900/70 z-50 flex items-center justify-center px-4">
+    <div class="bg-white w-full max-w-2xl rounded-3xl p-6 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h3 class="text-xl font-black text-slate-800">Tạo bộ đề thi</h3>
+        <button class="closeModalBtn text-slate-500 text-xl" data-target="quizModal"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="mt-5 space-y-4">
+        <div>
+          <label class="text-[11px] font-black uppercase tracking-wide text-slate-500">Tên bộ đề</label>
+          <input id="quizTitle" class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="VD: Trắc nghiệm Lịch sử">
+        </div>
+
+        <div>
+          <label class="text-[11px] font-black uppercase tracking-wide text-slate-500">Môn học</label>
+          <select id="quizSubject" class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            <option value="Sử">Sử</option>
+            <option value="Địa">Địa</option>
+            <option value="Hóa">Hóa</option>
+            <option value="Sinh">Sinh</option>
+            <option value="Toán">Toán</option>
+            <option value="Anh">Anh</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-[11px] font-black uppercase tracking-wide text-slate-500">Câu hỏi</label>
+          <textarea id="quizQuestion" rows="2" class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="VD: Hiệp định Paris được ký kết vào năm nào?"></textarea>
+        </div>
+
+        <div>
+          <label class="text-[11px] font-black uppercase tracking-wide text-slate-500">Lựa chọn A</label>
+          <input id="quizA" class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="1973">
+        </div>
+
+        <div>
+          <label class="text-[11px] font-black uppercase tracking-wide text-slate-500">Lựa chọn B</label>
+          <input id="quizB" class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="1954">
+        </div>
+
+        <div>
+          <label class="text-[11px] font-black uppercase tracking-wide text-slate-500">Lựa chọn C</label>
+          <input id="quizC" class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="1945">
+        </div>
+
+        <div>
+          <label class="text-[11px] font-black uppercase tracking-wide text-slate-500">Lựa chọn D</label>
+          <input id="quizD" class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="1975">
+        </div>
+
+        <div>
+          <label class="text-[11px] font-black uppercase tracking-wide text-slate-500">Đáp án đúng</label>
+          <select id="quizCorrect" class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end">
+        <button id="saveQuizBtn" class="bg-gradient-to-r from-indigo-600 to-violet-500 text-white px-5 py-3 rounded-2xl font-bold">
+          <i class="fa-solid fa-floppy-disk mr-2"></i>
+          Lưu bộ đề
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: add THPTQG doc -->
+  <div id="thptqgModal" class="fixed inset-0 hidden bg-slate-900/70 z-50 flex items-center justify-center px-4">
+    <div class="bg-white w-full max-w-xl rounded-3xl p-6 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h3 class="text-xl font-black text-slate-800">Đăng đề THPTQG</h3>
+        <button class="closeModalBtn text-slate-500 text-xl" data-target="thptqgModal"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="mt-5 space-y-4">
+        <div>
+          <label class="text-[11px] font-black uppercase tracking-wide text-slate-500">Tên đề</label>
+          <input id="thptqgTitle" class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="VD: Đề thi Toán THPTQG 2024">
+        </div>
+
+        <div>
+          <label class="text-[11px] font-black uppercase tracking-wide text-slate-500">Môn học</label>
+          <select id="thptqgSubject" class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            <option value="Toán">Toán</option>
+            <option value="Văn">Văn</option>
+            <option value="Anh">Anh</option>
+            <option value="Lý">Lý</option>
+            <option value="Hóa">Hóa</option>
+            <option value="Sinh">Sinh</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-[11px] font-black uppercase tracking-wide text-slate-500">Đơn vị cung cấp</label>
+          <input id="thptqgProvider" class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="VD: Sở GD&ĐT Hà Nội">
+        </div>
+
+        <div>
+          <label class="text-[11px] font-black uppercase tracking-wide text-slate-500">File PDF</label>
+          <input id="thptqgFile" type="file" class="mt-2 block w-full text-sm text-slate-600 file:mr-4 file:py-3 file:px-4 file:rounded-2xl file:border-0 file:text-sm file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end">
+        <button id="saveTHPTQGBtn" class="bg-gradient-to-r from-indigo-600 to-violet-500 text-white px-5 py-3 rounded-2xl font-bold">
+          <i class="fa-solid fa-floppy-disk mr-2"></i>
+          Lưu đề
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://YOUR_PROJECT_URL.supabase.co';
+    const supabaseKey = 'YOUR_ANON_KEY';
+    const supabase = supabaseJs.createClient(supabaseUrl, supabaseKey);
+
+    const state = {
+      selectedSubject: 'Tất cả',
+      documents: [],
+      flashcards: [],
+      quizSets: [],
+      thptqgDocs: []
+    };
+
+    const headerTitle = document.getElementById('headerTitle');
+    const documentsGrid = document.getElementById('documentsGrid');
+    const flashcardsGrid = document.getElementById('flashcardsGrid');
+    const quizSetsGrid = document.getElementById('quizSetsGrid');
+    const thptqgGrid = document.getElementById('thptqgGrid');
+
+    // navigation
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.nav-btn').forEach(item => {
+          item.classList.remove('active-tab');
+          item.classList.add('text-slate-600');
+        });
+
+        btn.classList.add('active-tab');
+        btn.classList.remove('text-slate-600');
+
+        const tab = btn.dataset.tab;
+        document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.add('hidden-panel'));
+        document.getElementById('tab-' + tab).classList.remove('hidden-panel');
+
+        const labels = {
+          tailieu: 'Tài liệu môn học',
+          khoahoc: 'Tài liệu Khóa học',
+          khochung: 'Kho chung & Tài liệu',
+          flashcard: 'Flashcard Thông minh',
+          phongthi: 'Phòng thi thử',
+          thptqg: 'Đề thi THPTQG'
+        };
+
+        headerTitle.textContent = labels[tab];
+      });
+    });
+
+    document.getElementById('toggleUploadForm').addEventListener('click', () => {
+      document.getElementById('uploadForm').classList.toggle('hidden');
+    });
+
+    document.getElementById('saveDocBtn').addEventListener('click', async () => {
+      const title = document.getElementById('docTitle').value.trim();
+      const subject = document.getElementById('docSubject').value;
+      const content = document.getElementById('docContent').value.trim();
+      const fileInput = document.getElementById('docFile');
+      const file = fileInput.files[0];
+
+      if (!title) {
+        alert('Vui lòng nhập tiêu đề tài liệu.');
+        return;
+      }
+
+      try {
+        let fileUrl = null;
+        let fileName = null;
+
+        if (file) {
+          const safeName = `${Date.now()}_${file.name.replace(/\\s+/g, '-')}`;
+          const { data: storageData, error: uploadError } = await supabase.storage
+            .from('learning-hub')
+            .upload(safeName, file, { upsert: true });
+
+          if (uploadError) throw uploadError;
+
+          fileName = storageData?.path || safeName;
+          const { data: urlData } = supabase.storage
+            .from('learning-hub')
+            .getPublicUrl(fileName);
+
+          fileUrl = urlData.publicUrl;
+        }
+
+        const { error } = await supabase.from('documents').insert([
+          {
+            title,
+            subject,
+            content: content || 'Không có mô tả',
+            file_url: fileUrl,
+            file_name: fileName || null,
+            created_by: localStorage.getItem('lh_user') || 'guest'
+          }
+        ]);
+
+        if (error) throw error;
+
+        document.getElementById('uploadForm').classList.add('hidden');
+        document.getElementById('docTitle').value = '';
+        document.getElementById('docContent').value = '';
+        document.getElementById('docFile').value = '';
+
+        alert('Tài liệu đã được lưu thành công!');
+        await loadDocuments();
+      } catch (err) {
+        console.error(err);
+        alert('Có lỗi khi lưu tài liệu: ' + err.message);
+      }
+    });
+
+    document.getElementById('searchDocs').addEventListener('input', renderDocuments);
+
+    document.querySelectorAll('.subject-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.subject-btn').forEach(item => {
+          item.classList.remove('active-subject', 'bg-indigo-600', 'text-white');
+          item.classList.add('bg-slate-100', 'text-slate-600');
+        });
+
+        btn.classList.add('active-subject', 'bg-indigo-600', 'text-white');
+        btn.classList.remove('bg-slate-100', 'text-slate-600');
+
+        state.selectedSubject = btn.dataset.subject;
+        renderDocuments();
+      });
+    });
+
+    async function loadDocuments() {
+      try {
+        const { data, error } = await supabase
+          .from('documents')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        state.documents = data || [];
+        renderDocuments();
+      } catch (err) {
+        console.error(err);
+        state.documents = [];
+        renderDocuments();
+      }
+    }
+
+    function renderDocuments() {
+      const keyword = (document.getElementById('searchDocs').value || '').toLowerCase();
+
+      const filtered = state.documents.filter(doc => {
+        const subjectOK = state.selectedSubject === 'Tất cả' || doc.subject === state.selectedSubject;
+        const text = `${doc.title} ${doc.subject} ${doc.content}`.toLowerCase();
+        const keywordOK = text.includes(keyword);
+        return subjectOK && keywordOK;
+      });
+
+      if (!filtered.length) {
+        documentsGrid.innerHTML = `
+          <div class="col-span-full flex items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center">
+            <div>
+              <i class="fa-solid fa-box-open text-4xl text-slate-300 mb-3"></i>
+              <p class="text-slate-500 font-semibold">Chưa có tài liệu nào phù hợp</p>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      documentsGrid.innerHTML = filtered.map(doc => {
+        const hasFile = !!doc.file_url;
+        return `
+          <div class="card-hover bg-white rounded-3xl p-4">
+            <div class="doc-thumb">
+              ${hasFile
+                ? (doc.file_url.toLowerCase().includes('.pdf')
+                  ? '<div class="text-center"><i class="fa-solid fa-file-pdf text-5xl text-red-500"></i><p class="mt-3 text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">PDF</p></div>'
+                  : '<div class="text-center"><i class="fa-solid fa-file-lines text-5xl text-indigo-500"></i><p class="mt-3 text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">File</p></div>')
+                : '<div class="text-center"><i class="fa-solid fa-file-lines text-5xl text-slate-400"></i><p class="mt-3 text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">Text</p></div>'}
+            </div>
+
+            <div class="mt-4 flex items-center justify-between">
+              <span class="file-badge bg-indigo-50 text-indigo-700">${doc.subject || 'Khác'}</span>
+              <button class="text-xs text-rose-500 font-bold" onclick="deleteDocument('${doc.id}')"><i class="fa-solid fa-trash"></i></button>
+            </div>
+
+            <h4 class="mt-3 text-lg font-black text-slate-800">${doc.title}</h4>
+            <p class="mt-2 text-sm text-slate-500 line-clamp-3">${doc.content || 'Không có mô tả'}</p>
+
+            <div class="mt-4 flex gap-2">
+              ${hasFile
+                ? `<button class="flex-1 bg-indigo-50 text-indigo-700 rounded-2xl px-3 py-2 text-xs font-bold" onclick="previewDocument('${doc.file_url}', '${doc.title.replace(/'/g, "\\'")}')"><i class="fa-solid fa-eye mr-1"></i> Xem</button>`
+                : `<button class="flex-1 bg-slate-100 text-slate-500 rounded-2xl px-3 py-2 text-xs font-bold cursor-not-allowed"><i class="fa-solid fa-eye-slash mr-1"></i> Không file</button>`}
+
+              ${hasFile
+                ? `<a href="${doc.file_url}" target="_blank" download class="flex-1 bg-emerald-50 text-emerald-700 rounded-2xl px-3 py-2 text-xs font-bold text-center"><i class="fa-solid fa-download mr-1"></i> Tải</a>`
+                : `<button class="flex-1 bg-slate-100 text-slate-500 rounded-2xl px-3 py-2 text-xs font-bold cursor-not-allowed"><i class="fa-solid fa-download mr-1"></i> Không file</button>`}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function deleteDocument(id) {
+      const confirmDelete = confirm('Bạn có chắc chắn muốn xóa tài liệu này không?');
+      if (!confirmDelete) return;
+
+      try {
+        const { error } = await supabase.from('documents').delete().eq('id', id);
+        if (error) throw error;
+        alert('Đã xóa tài liệu.');
+        await loadDocuments();
+      } catch (err) {
+        console.error(err);
+        alert('Không thể xóa tài liệu: ' + err.message);
+      }
+    }
+
+    async function previewDocument(url, title) {
+      if (!url || !url.toLowerCase().includes('.pdf')) {
+        alert('Tài liệu này không phải PDF hoặc không có file gốc.');
+        return;
+      }
+
+      const modal = document.getElementById('pdfModal');
+      const canvas = document.getElementById('pdfCanvas');
+      const pdfTitle = document.getElementById('pdfTitle');
+
+      pdfTitle.textContent = title;
+      modal.classList.remove('hidden');
+
+      try {
+        const pdf = await pdfjsLib.getDocument(url).promise;
+        const page = await pdf.getPage(1);
+        const viewport = page.getViewport({ scale: 1.2 });
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        const context = canvas.getContext('2d');
+        await page.render({
+          canvasContext: context,
+          viewport
+        }).promise;
+      } catch (err) {
+        console.error(err);
+        alert('Không thể xem trước PDF. Có thể file bị giới hạn truy cập hoặc không hợp lệ.');
+      }
+    }
+
+    document.getElementById('closePdfModal').addEventListener('click', () => {
+      document.getElementById('pdfModal').classList.add('hidden');
+    });
+
+    // FLASHCARD
+    async function loadFlashcards() {
+      try {
+        const { data, error } = await supabase.from('flashcards').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        state.flashcards = data || [];
+        renderFlashcards();
+      } catch (err) {
+        console.error(err);
+        state.flashcards = [];
+        renderFlashcards();
+      }
+    }
+
+    function renderFlashcards() {
+      if (!state.flashcards.length) {
+        flashcardsGrid.innerHTML = `
+          <div class="col-span-full flex items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center">
+            <div>
+              <i class="fa-solid fa-clone text-4xl text-slate-300 mb-3"></i>
+              <p class="text-slate-500 font-semibold">Chưa có flashcard nào</p>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      flashcardsGrid.innerHTML = state.flashcards.map((card, index) => `
+        <div class="flip-card" data-index="${index}">
+          <div class="flip-card-inner">
+            <div class="flip-card-front">
+              <div class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Flashcard</div>
+              <div class="mt-4 text-2xl font-black text-slate-800">${card.front}</div>
+              <div class="mt-4 text-xs text-slate-500">Nhấn để lật</div>
+            </div>
+
+            <div class="flip-card-back">
+              <div class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Đáp án</div>
+              <div class="mt-4 text-lg font-bold text-slate-800">${card.back}</div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      document.querySelectorAll('.flip-card').forEach(card => {
+        card.addEventListener('click', () => {
+          card.classList.toggle('flipped');
+        });
+      });
+    }
+
+    document.getElementById('addFlashcardBtn').addEventListener('click', () => {
+      document.getElementById('flashcardModal').classList.remove('hidden');
+    });
+
+    document.getElementById('saveFlashcardBtn').addEventListener('click', async () => {
+      const title = document.getElementById('flashcardTitle').value.trim();
+      const front = document.getElementById('flashcardFront').value.trim();
+      const back = document.getElementById('flashcardBack').value.trim();
+
+      if (!title || !front || !back) {
+        alert('Vui lòng nhập đầy đủ thông tin thẻ.');
+        return;
+      }
+
+      try {
+        const { error } = await supabase.from('flashcards').insert([
+          {
+            title,
+            front,
+            back,
+            created_by: localStorage.getItem('lh_user') || 'guest'
+          }
+        ]);
+
+        if (error) throw error;
+
+        document.getElementById('flashcardModal').classList.add('hidden');
+        document.getElementById('flashcardTitle').value = '';
+        document.getElementById('flashcardFront').value = '';
+        document.getElementById('flashcardBack').value = '';
+
+        alert('Thêm thẻ thành công!');
+        await loadFlashcards();
+      } catch (err) {
+        console.error(err);
+        alert('Không thể lưu flashcard: ' + err.message);
+      }
+    });
+
+    // QUIZ
+    async function loadQuizSets() {
+      try {
+        const { data, error } = await supabase.from('quiz_sets').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+
+        state.quizSets = data || [];
+        renderQuizSets();
+      } catch (err) {
+        console.error(err);
+        state.quizSets = [];
+        renderQuizSets();
+      }
+    }
+
+    function renderQuizSets() {
+      if (!state.quizSets.length) {
+        quizSetsGrid.innerHTML = `
+          <div class="col-span-full flex items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center">
+            <div>
+              <i class="fa-solid fa-clipboard-question text-4xl text-slate-300 mb-3"></i>
+              <p class="text-slate-500 font-semibold">Chưa có bộ đề nào</p>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      quizSetsGrid.innerHTML = state.quizSets.map(set => `
+        <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="file-badge bg-emerald-50 text-emerald-700">${set.subject || 'Khác'}</span>
+            <span class="text-xs text-slate-400">${Array.isArray(set.questions) ? set.questions.length : 0} câu</span>
+          </div>
+
+          <h4 class="mt-4 text-xl font-black text-slate-800">${set.title}</h4>
+          <p class="mt-2 text-sm text-slate-500">Bộ đề được tạo bởi thành viên trong nhóm.</p>
+
+          <div class="mt-4">
+            ${Array.isArray(set.questions) && set.questions.length ? set.questions.slice(0, 2).map(q => `
+              <div class="mt-2 rounded-2xl bg-slate-50 p-3 text-sm text-slate-700">
+                ${q.question}
+              </div>
+            `).join('') : ''}
+          </div>
+
+          <button class="mt-4 w-full bg-indigo-50 text-indigo-700 rounded-2xl py-2 text-xs font-bold" onclick="showQuiz('${set.id}')">
+            <i class="fa-solid fa-play mr-1"></i>
+            Làm bài
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function showQuiz(id) {
+      const set = state.quizSets.find(item => item.id === id);
+      if (!set) return;
+
+      const q = Array.isArray(set.questions) && set.questions.length ? set.questions[0] : null;
+      if (!q) {
+        alert('Bộ đề chưa có câu hỏi.');
+        return;
+      }
+
+      const options = q.options || [];
+      const answer = q.correct || 'A';
+
+      let html = `
+        <div class="space-y-3">
+          <h3 class="text-2xl font-black text-slate-800">${set.title}</h3>
+          <p class="text-base font-semibold text-slate-700">${q.question}</p>
+      `;
+
+      options.forEach((opt, index) => {
+        html += `<div class="quiz-option">${String.fromCharCode(65 + index)}. ${opt}</div>`;
+      });
+
+      html += `
+          <div class="mt-4 rounded-2xl bg-amber-50 text-amber-800 p-3 text-sm">
+            <strong>Đáp án đúng:</strong> ${answer}
+          </div>
+        </div>
+      `;
+
+      alert(html.replace(/<[^>]+>/g, ''));
+    }
+
+    document.getElementById('addQuizBtn').addEventListener('click', () => {
+      document.getElementById('quizModal').classList.remove('hidden');
+    });
+
+    document.getElementById('saveQuizBtn').addEventListener('click', async () => {
+      const title = document.getElementById('quizTitle').value.trim();
+      const subject = document.getElementById('quizSubject').value;
+      const q = document.getElementById('quizQuestion').value.trim();
+      const A = document.getElementById('quizA').value.trim();
+      const B = document.getElementById('quizB').value.trim();
+      const C = document.getElementById('quizC').value.trim();
+      const D = document.getElementById('quizD').value.trim();
+      const correct = document.getElementById('quizCorrect').value;
+
+      if (!title || !q || !A || !B || !C || !D) {
+        alert('Vui lòng nhập đầy đủ thông tin bộ đề.');
+        return;
+      }
+
+      const qs = [{
+        question: q,
+        options: [A, B, C, D],
+        correct: correct
+      }];
+
+      try {
+        const { error } = await supabase.from('quiz_sets').insert([
+          {
+            title,
+            subject,
+            questions: qs,
+            created_by: localStorage.getItem('lh_user') || 'guest'
+          }
+        ]);
+
+        if (error) throw error;
+
+        document.getElementById('quizModal').classList.add('hidden');
+        document.getElementById('quizTitle').value = '';
+        document.getElementById('quizQuestion').value = '';
+        document.getElementById('quizA').value = '';
+        document.getElementById('quizB').value = '';
+        document.getElementById('quizC').value = '';
+        document.getElementById('quizD').value = '';
+
+        alert('Tạo bộ đề thành công!');
+        await loadQuizSets();
+      } catch (err) {
+        console.error(err);
+        alert('Không thể lưu bộ đề: ' + err.message);
+      }
+    });
+
+    // THPTQG
+    async function loadTHPTQG() {
+      try {
+        const { data, error } = await supabase.from('thptqg_docs').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        state.thptqgDocs = data || [];
+        renderTHPTQG();
+      } catch (err) {
+        console.error(err);
+        state.thptqgDocs = [];
+        renderTHPTQG();
+      }
+    }
+
+    function renderTHPTQG() {
+      const list = state.thptqgDocs.length ? state.thptqgDocs : [
+        {
+          id: 'sample1',
+          title: 'Đề Toán THPTQG 2024',
+          provider: 'Sở GD&ĐT Hà Nội',
+          subject: 'Toán',
+          file_url: ''
+        },
+        {
+          id: 'sample2',
+          title: 'Đề Văn THPTQG 2024',
+          provider: 'Trường THPT Chuyên Hà Nội – Amsterdam',
+          subject: 'Văn',
+          file_url: ''
+        }
+      ];
+
+      thptqgGrid.innerHTML = list.map(item => `
+        <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div>
+              <span class="file-badge bg-indigo-50 text-indigo-700">${item.subject || 'Khác'}</span>
+              <h4 class="mt-3 text-lg font-black text-slate-800">${item.title}</h4>
+              <p class="mt-1 text-sm text-slate-500">${item.provider || 'Sở GD&ĐT'}</p>
+            </div>
+
+            <div class="flex gap-2">
+              ${item.file_url
+                ? `<a href="${item.file_url}" target="_blank" class="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-2xl text-xs font-bold">Tải đề</a>`
+                : `<button class="bg-slate-100 text-slate-500 px-4 py-2 rounded-2xl text-xs font-bold cursor-not-allowed">Chưa có file</button>`}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('addTHPTQGBtn').addEventListener('click', () => {
+      document.getElementById('thptqgModal').classList.remove('hidden');
+    });
+
+    document.getElementById('saveTHPTQGBtn').addEventListener('click', async () => {
+      const title = document.getElementById('thptqgTitle').value.trim();
+      const subject = document.getElementById('thptqgSubject').value;
+      const provider = document.getElementById('thptqgProvider').value.trim();
+      const fileInput = document.getElementById('thptqgFile');
+      const file = fileInput.files[0];
+
+      if (!title) {
+        alert('Vui lòng nhập tên đề thi.');
+        return;
+      }
+
+      try {
+        let fileUrl = null;
+        let fileName = null;
+
+        if (file) {
+          const safeName = `${Date.now()}_${file.name.replace(/\\s+/g, '-')}`;
+          const { data: storageData, error: uploadError } = await supabase.storage
+            .from('learning-hub')
+            .upload(safeName, file, { upsert: true });
+
+          if (uploadError) throw uploadError;
+
+          fileName = storageData?.path || safeName;
+          const { data: urlData } = supabase.storage
+            .from('learning-hub')
+            .getPublicUrl(fileName);
+
+          fileUrl = urlData.publicUrl;
+        }
+
+        const { error } = await supabase.from('thptqg_docs').insert([
+          {
+            title,
+            subject,
+            provider: provider || 'Sở GD&ĐT',
+            file_url: fileUrl,
+            file_name: fileName || null,
+            created_by: localStorage.getItem('lh_user') || 'guest'
+          }
+        ]);
+
+        if (error) throw error;
+
+        document.getElementById('thptqgModal').classList.add('hidden');
+        document.getElementById('thptqgTitle').value = '';
+        document.getElementById('thptqgProvider').value = '';
+        document.getElementById('thptqgFile').value = '';
+
+        alert('Đã đăng đề THPTQG thành công!');
+        await loadTHPTQG();
+      } catch (err) {
+        console.error(err);
+        alert('Không thể lưu đề THPTQG: ' + err.message);
+      }
+    });
+
+    // close modal buttons
+    document.querySelectorAll('.closeModalBtn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.target;
+        document.getElementById(target).classList.add('hidden');
+      });
+    });
+
+    (function initUser() {
+      const existing = localStorage.getItem('lh_user');
+      if (!existing) {
+        const name = prompt('Nhập tên bạn (để hiển thị trong hệ thống):', 'Bạn');
+        localStorage.setItem('lh_user', name || 'guest');
+      }
+    })();
+
+    async function initData() {
+      await loadDocuments();
+      await loadFlashcards();
+      await loadQuizSets();
+      await loadTHPTQG();
+    }
+
+    initData();
+  </script>
+</body>
+</html>
